@@ -1,0 +1,10 @@
+/work/
+/artifacts/*.zip
+/artifacts/*.img
+/artifacts/*.apk
+/artifacts/*.tar
+/artifacts/*.tar.gz
+/artifacts/*.dtb
+/src/linux/.output/
+/src/linux/build/
+*.log
