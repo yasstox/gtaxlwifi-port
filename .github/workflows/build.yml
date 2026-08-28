@@ -1,0 +1,222 @@
+name: Build postmarketOS SM-T580
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "r*"
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    env:
+      PMB_CFG: ${{ runner.temp }}/pmbootstrap-ci.cfg
+      PMB_WORK: ${{ runner.temp }}/pmbootstrap-work
+      PMB_INIT_APORTS: ${{ runner.temp }}/pmaports-init
+
+    steps:
+      - name: Checkout project and private submodules
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_TOKEN }}
+
+      - name: Install host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git ca-certificates python3 python3-venv python3-pip \
+            build-essential bc bison flex \
+            libssl-dev libelf-dev libncurses-dev \
+            gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
+            device-tree-compiler dwarves \
+            qemu-user-static binfmt-support kpartx \
+            cpio rsync unzip zip xz-utils zstd \
+            adb openssl procps
+
+      - name: Define pmbootstrap helper
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/pmb-env.sh" <<'EOF'
+          export GTAXL_ROOT="$GITHUB_WORKSPACE"
+          export GTAXL_PMB="$GITHUB_WORKSPACE/src/pmbootstrap/pmbootstrap.py"
+          pmb() {
+            python3 "$GTAXL_PMB" --config "$PMB_CFG" "$@"
+          }
+          EOF
+
+      - name: Prepare disposable pmbootstrap configuration
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import configparser
+          import os
+          from pathlib import Path
+
+          cfg_path = Path(os.environ["PMB_CFG"])
+          cfg = configparser.ConfigParser()
+          cfg["pmbootstrap"] = {
+              "aports": os.environ["PMB_INIT_APORTS"],
+              "build_pkgs_on_install": "False",
+              "device": "samsung-gtaxlwifi",
+              "is_default_channel": "False",
+              "locale": "fr_FR.UTF-8",
+              "timezone": "Europe/Paris",
+              "work": os.environ["PMB_WORK"],
+              "ui": "console",
+              "service_manager": "systemd",
+              "user": "user",
+              "hostname": "samsung-gtaxlwifi",
+          }
+          cfg["providers"] = {}
+          cfg["mirrors"] = {}
+          with cfg_path.open("w") as f:
+              cfg.write(f)
+          PY
+
+          source "$RUNNER_TEMP/pmb-env.sh"
+
+          # Init uses a disposable pmaports clone so it cannot switch or
+          # modify the checked-out patched src/pmaports submodule.
+          yes '' | pmb init --shallow-initial-clone
+
+          # After initialization, point pmbootstrap at the exact pmaports
+          # commit recorded by the meta-repository.
+          pmb config aports "$GITHUB_WORKSPACE/src/pmaports"
+          pmb config work "$PMB_WORK"
+          pmb config device samsung-gtaxlwifi
+          pmb config ui console
+          pmb config service_manager systemd
+          pmb config user user
+          pmb status
+
+      - name: Build Linux kernel
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd src/linux
+
+          rm -rf .output
+          mkdir -p .output
+          cp \
+            ../pmaports/device/testing/linux-postmarketos-exynos7870/config-postmarketos-exynos7870.aarch64 \
+            .output/.config
+
+          make \
+            O=.output \
+            ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            olddefconfig
+
+          make \
+            O=.output \
+            ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            -j"$(nproc)"
+
+          test -f .output/arch/arm64/boot/Image
+          test -f .output/arch/arm64/boot/dts/exynos/exynos7870-gtaxlwifi.dtb
+          cat .output/include/config/kernel.release
+
+      - name: Package local kernel
+        shell: bash
+        run: |
+          source "$RUNNER_TEMP/pmb-env.sh"
+          cd src/linux
+          pmb build --force --envkernel linux-postmarketos-exynos7870
+
+      - name: Build device package
+        shell: bash
+        run: |
+          source "$RUNNER_TEMP/pmb-env.sh"
+          pmb build --force device-samsung-gtaxlwifi
+
+      - name: Build recovery ZIP
+        shell: bash
+        env:
+          PMOS_TEST_PASSWORD: ${{ secrets.PMOS_TEST_PASSWORD }}
+        run: |
+          set -euxo pipefail
+          source "$RUNNER_TEMP/pmb-env.sh"
+
+          if [ -z "${PMOS_TEST_PASSWORD:-}" ]; then
+            echo "PMOS_TEST_PASSWORD secret is required"
+            exit 1
+          fi
+
+          pmb install \
+            --android-recovery-zip \
+            --recovery-install-partition=system \
+            --password "$PMOS_TEST_PASSWORD"
+
+      - name: Collect and validate artifacts
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          DIST="$GITHUB_WORKSPACE/dist"
+          mkdir -p "$DIST"
+
+          ZIP="$PMB_WORK/chroot_buildroot_aarch64/var/lib/postmarketos-android-recovery-installer/pmos-samsung-gtaxlwifi.zip"
+          ROOTFS="$PMB_WORK/chroot_rootfs_samsung-gtaxlwifi"
+          BOOT="$ROOTFS/boot/boot.img"
+          DTB="$ROOTFS/boot/dtbs/exynos/exynos7870-gtaxlwifi.dtb"
+          VMLINUX="$ROOTFS/boot/vmlinuz"
+
+          sudo test -f "$ZIP"
+          sudo test -f "$BOOT"
+          sudo test -f "$DTB"
+          sudo test -f "$VMLINUX"
+
+          sudo unzip -t "$ZIP"
+
+          BOOT_BYTES="$(sudo stat -Lc '%s' "$BOOT")"
+          echo "boot.img size: $BOOT_BYTES bytes"
+          test "$BOOT_BYTES" -le 33554432
+
+          sudo cp "$ZIP" "$DIST/postmarketOS-edge-gtaxlwifi-${GITHUB_REF_NAME}.zip"
+          sudo cp "$BOOT" "$DIST/boot-${GITHUB_REF_NAME}.img"
+          sudo cp "$DTB" "$DIST/exynos7870-gtaxlwifi-${GITHUB_REF_NAME}.dtb"
+          sudo cp "$VMLINUX" "$DIST/vmlinuz-${GITHUB_REF_NAME}"
+
+          sudo chown -R "$(id -u):$(id -g)" "$DIST"
+
+          (
+            cd "$DIST"
+            sha256sum * > SHA256SUMS
+          )
+
+          {
+            echo "meta_commit=$GITHUB_SHA"
+            echo "kernel_commit=$(git -C src/linux rev-parse HEAD)"
+            echo "pmaports_commit=$(git -C src/pmaports rev-parse HEAD)"
+            echo "kernel_release=$(cat src/linux/.output/include/config/kernel.release)"
+            echo "boot_bytes=$BOOT_BYTES"
+          } > "$DIST/BUILD-METADATA.txt"
+
+      - name: Upload Actions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gtaxlwifi-${{ github.ref_name }}-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Create GitHub Release for tag
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/* \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes

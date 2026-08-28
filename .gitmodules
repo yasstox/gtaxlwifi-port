@@ -3,10 +3,10 @@
 	url = https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
 [submodule "src/pmaports"]
 	path = src/pmaports
-	url = https://gitlab.postmarketos.org/postmarketOS/pmaports.git
+	url = https://github.com/yasstox/pmaports-gtaxlwifi.git
 [submodule "src/linux"]
 	path = src/linux
-	url = https://gitlab.com/exynos7870-mainline/linux.git
+	url = https://github.com/yasstox/linux-exynos7870-gtaxlwifi.git
 	branch = exynos7870/6.19
 [submodule "src/vendor-kernel"]
 	path = src/vendor-kernel
