@@ -1,0 +1,13 @@
+[submodule "src/pmbootstrap"]
+	path = src/pmbootstrap
+	url = https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
+[submodule "src/pmaports"]
+	path = src/pmaports
+	url = https://gitlab.postmarketos.org/postmarketOS/pmaports.git
+[submodule "src/linux"]
+	path = src/linux
+	url = https://gitlab.com/exynos7870-mainline/linux.git
+	branch = exynos7870/6.19
+[submodule "src/vendor-kernel"]
+	path = src/vendor-kernel
+	url = https://github.com/Yusuf6411/Kernel_SM-T580_gtaxlwifi.git
