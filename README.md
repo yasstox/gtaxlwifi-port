@@ -124,3 +124,17 @@ This project is experimental and under active development.
 Not every hardware component is expected to work yet, and development images may contain regressions or incomplete hardware support.
 
 Build artifacts should be considered development/testing images unless a specific revision is explicitly documented as validated.
+
+## AI-assisted development
+
+This project was developed with extensive assistance from AI tools, primarily for research, debugging, code review, documentation, and guidance through the Linux kernel and postmarketOS development process.
+
+When I started working on this port, I had no prior experience with Linux kernel porting, Device Tree bring-up, DRM/KMS display pipelines, or postmarketOS device development. AI assistance made it possible for me to understand these systems while actively working on a real device, instead of spending months learning every component before being able to experiment.
+
+This does **not** mean the project was generated autonomously by AI.
+
+All builds, hardware tests, flashes, observations and validation were performed on real hardware. Changes were reviewed, tested incrementally and documented based on their actual results. AI suggestions were treated as hypotheses to verify rather than assumed to be correct.
+
+The use of AI dramatically accelerated the learning and development process, but the project remains the result of experimentation, debugging, decision-making and hands-on work.
+
+Without these tools, I probably would not have been able to reach this point nearly as quickly — and this project is also a practical example of how AI can help someone learn a complex technical field by building something real.
