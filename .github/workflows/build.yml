@@ -15,11 +15,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
 
-    env:
-      PMB_CFG: ${{ runner.temp }}/pmbootstrap-ci.cfg
-      PMB_WORK: ${{ runner.temp }}/pmbootstrap-work
-      PMB_INIT_APORTS: ${{ runner.temp }}/pmaports-init
-
     steps:
       - name: Checkout project and private submodules
         uses: actions/checkout@v7
@@ -27,7 +22,16 @@ jobs:
           fetch-depth: 0
           submodules: recursive
           token: ${{ secrets.SUBMODULES_TOKEN }}
-
+          
+      - name: Define CI paths
+        shell: bash
+        run: |
+          {
+            echo "PMB_CFG=$RUNNER_TEMP/pmbootstrap-ci.cfg"
+            echo "PMB_WORK=$RUNNER_TEMP/pmbootstrap-work"
+            echo "PMB_INIT_APORTS=$RUNNER_TEMP/pmaports-init"
+          } >> "$GITHUB_ENV"
+          
       - name: Install host dependencies
         run: |
           sudo apt-get update
@@ -65,7 +69,9 @@ jobs:
           cfg["pmbootstrap"] = {
               "aports": os.environ["PMB_INIT_APORTS"],
               "build_pkgs_on_install": "False",
-              "device": "samsung-gtaxlwifi",
+              # Temporary device only for non-interactive pmbootstrap init.
+              # The real SM-T580 target is selected immediately afterwards.
+              "device": "qemu-amd64",
               "is_default_channel": "False",
               "locale": "fr_FR.UTF-8",
               "timezone": "Europe/Paris",
