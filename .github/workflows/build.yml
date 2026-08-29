@@ -89,10 +89,13 @@ jobs:
 
           source "$RUNNER_TEMP/pmb-env.sh"
 
-          # Init uses a disposable pmaports clone so it cannot switch or
-          # modify the checked-out patched src/pmaports submodule.
-          yes '' | pmb init --shallow-initial-clone
 
+          # pmbootstrap init is interactive. Feed default answers, but disable
+          # pipefail for this pipeline because `yes` normally receives SIGPIPE
+          # when pmbootstrap finishes reading its input.
+          set +o pipefail
+          yes '' | pmb init --shallow-initial-clone
+          set -o pipefail
           # After initialization, point pmbootstrap at the exact pmaports
           # commit recorded by the meta-repository.
           pmb config aports "$GITHUB_WORKSPACE/src/pmaports"
