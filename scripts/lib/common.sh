@@ -13,6 +13,7 @@ if [[ -f "$GTAXL_ROOT/.env" ]]; then
 fi
 
 GTAXL_ROOT="${GTAXL_ROOT:-$DEFAULT_ROOT}"
+GTAXL_KERNEL_DIR="${GTAXL_KERNEL_DIR:-$GTAXL_ROOT/src/linux}"
 GTAXL_PMB="${GTAXL_PMB:-$GTAXL_ROOT/src/pmbootstrap/pmbootstrap.py}"
 GTAXL_PMB_CFG="${GTAXL_PMB_CFG:-$GTAXL_ROOT/config/pmbootstrap-console.cfg}"
 GTAXL_ADB_SUDO="${GTAXL_ADB_SUDO:-1}"

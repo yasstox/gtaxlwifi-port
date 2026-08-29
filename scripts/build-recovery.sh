@@ -19,12 +19,15 @@ pmb install \
   --password "$PASSWORD"
 
 ROOTFS="$GTAXL_ROOT/work/pmbootstrap-work/chroot_rootfs_samsung-gtaxlwifi"
-IMAGE="$GTAXL_ROOT/src/linux/.output/arch/arm64/boot/Image"
+IMAGE="$GTAXL_KERNEL_DIR/.output/arch/arm64/boot/Image"
 VMLINUX="$ROOTFS/boot/vmlinuz"
 RAWZIP="$GTAXL_ROOT/work/pmbootstrap-work/chroot_buildroot_aarch64/var/lib/postmarketos-android-recovery-installer/pmos-samsung-gtaxlwifi.zip"
 
 [[ -f "$RAWZIP" ]] || die "Recovery ZIP not found"
 unzip -t "$RAWZIP" >/dev/null
+
+log "Validating packaged kernel"
+echo "Kernel source: $GTAXL_KERNEL_DIR"
 
 if [[ -f "$IMAGE" ]]; then
   IMAGE_SHA="$(sha256sum "$IMAGE" | awk '{print $1}')"
