@@ -23,6 +23,22 @@ jobs:
           submodules: recursive
           token: ${{ secrets.SUBMODULES_TOKEN }}
           
+      - name: Configure upstream remotes
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          if git -C src/pmaports remote get-url upstream >/dev/null 2>&1; then
+            git -C src/pmaports remote set-url upstream \
+              https://gitlab.postmarketos.org/postmarketOS/pmaports.git
+          else
+            git -C src/pmaports remote add upstream \
+              https://gitlab.postmarketos.org/postmarketOS/pmaports.git
+          fi
+
+          echo "pmaports remotes:"
+          git -C src/pmaports remote -v
+
       - name: Define CI paths
         shell: bash
         run: |
