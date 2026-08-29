@@ -8,3 +8,12 @@
 /src/linux/.output/
 /src/linux/build/
 *.log
+# Local secrets
+.env
+# Local build/work outputs
+work/
+artifacts/
+share/
+# Local full-workspace snapshots
+*.snapshot.zip
+*.snapshot.tar.*
