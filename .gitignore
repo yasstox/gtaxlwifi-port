@@ -1,19 +1,20 @@
-/work/
-/artifacts/*.zip
-/artifacts/*.img
+
+artifacts/
 /artifacts/*.apk
+/artifacts/*.dtb
+/artifacts/*.img
 /artifacts/*.tar
 /artifacts/*.tar.gz
-/artifacts/*.dtb
-/src/linux/.output/
-/src/linux/build/
-*.log
-# Local secrets
+/artifacts/*.zip
 .env
 # Local build/work outputs
-work/
-artifacts/
-share/
 # Local full-workspace snapshots
-*.snapshot.zip
+# Local secrets
+*.log
+share/
 *.snapshot.tar.*
+*.snapshot.zip
+/src/linux/build/
+/src/linux/.output/
+/work/
+work/

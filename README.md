@@ -117,13 +117,37 @@ Likewise, patches or files derived from Linux, postmarketOS or other upstream pr
 
 When redistributing or publishing this project, the licenses and attribution requirements of each included or referenced project must be preserved.
 
-### Project status
+### Current verified status
 
-This project is experimental and under active development.
+The current Linux 6.19 development baseline boots completely into
+postmarketOS and provides USB networking/SSH.
 
-Not every hardware component is expected to work yet, and development images may contain regressions or incomplete hardware support.
+Display bring-up has reached an important intermediate milestone:
 
-Build artifacts should be considered development/testing images unless a specific revision is explicitly documented as validated.
+* the Samsung bootloader framebuffer is inherited by `simpledrm`;
+* the original post-login black screen was traced to regulator cleanup;
+* a debug kernel keeping `vdd_ldo25`, `vdd_ldo33` and `vdd_ldo35` enabled keeps
+  the panel alive continuously;
+* a development kernel command-line append patch successfully enables
+  `pmos.debug-shell` while preserving the Samsung bootloader arguments;
+* XFCE4 renders successfully at the tablet's 1200×1920 framebuffer resolution.
+
+This is **not yet native display support**. The current display path still
+depends on the bootloader having initialized the panel and on temporary
+always-on regulator flags. Native Exynos DECON/DSIM/MIPI-DSI panel bring-up
+remains future work.
+
+Current input/network limitations:
+
+* GPIO keys work;
+* touchscreen input currently fails on I2C and does not work in either the
+  initramfs debug shell or XFCE4;
+* the QCA6174 SDIO Wi-Fi device enumerates, but `ath10k_sdio` currently fails
+  while enabling SDIO function 1 and does not create `wlan0`;
+* USB gadget networking is the primary development connection.
+
+See `STATUS.md` for verified hardware observations and `TODO.md` for the
+current work order.
 
 ## AI-assisted development
 

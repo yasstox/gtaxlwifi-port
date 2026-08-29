@@ -27,13 +27,24 @@ gtaxlwifi-port/
 └── work/                      # pmbootstrap workdir; never commit
 ```
 
-Expected development branches:
+Clean development branches:
 
 ```text
 src/linux:    port/gtaxlwifi-6.19
 src/pmaports: port/gtaxlwifi-6.19
 meta repo:    main
 ```
+
+The current display bring-up also uses an isolated kernel worktree:
+
+```text
+/workspace/linux-gtaxlwifi-display
+branch: debug/display-regulator
+```
+
+This keeps experimental display commits out of the clean kernel branch. It does
+**not** isolate pmbootstrap's shared workdir/package repository, so do not run
+two pmbootstrap packaging/install jobs concurrently against the same workdir.
 
 The meta-repository records the exact commits of the kernel and pmaports
 submodules. This makes a known-good milestone reproducible without flattening
@@ -134,17 +145,41 @@ normal build user before modifying Git files.
 
 ## 4. Project environment
 
-From the project root:
+From the project root, prefer the shared helper:
 
 ```bash
-export GTAXL_ROOT=/workspace/gtaxlwifi-port
-export GTAXL_PMB="$GTAXL_ROOT/src/pmbootstrap/pmbootstrap.py"
-export GTAXL_CFG="$GTAXL_ROOT/config/pmbootstrap-console.cfg"
-
-pmb() {
-    python3 "$GTAXL_PMB" --config "$GTAXL_CFG" "$@"
-}
+cd /workspace/gtaxlwifi-port
+source scripts/lib/common.sh
 ```
+
+This defines the `pmb` helper around the project-local pmbootstrap/config.
+
+Local credentials and device connection settings live in the ignored `.env`.
+The public `.env.example` documents the supported fields. The SSH section uses:
+
+```text
+GTAXL_SSH_USER
+GTAXL_SSH_HOST
+GTAXL_SSH_PASSWORD
+```
+
+`sshpass` is used by the SSH helpers when password automation is enabled:
+
+```bash
+sudo apt install -y sshpass
+```
+
+Never commit `.env`.
+
+For an alternate kernel worktree, explicitly keep track of the source directory
+used for the build. The current display-debug worktree is:
+
+```text
+/workspace/linux-gtaxlwifi-display
+```
+
+Manual SHA-256 comparison between that worktree's `Image` and rootfs
+`/boot/vmlinuz` is mandatory before flashing.
 
 Check:
 
@@ -256,6 +291,25 @@ The kernel embedded in the package must match:
 ```bash
 cat .output/include/config/kernel.release
 ```
+
+When using an alternate worktree, `--envkernel` must be executed **from that
+worktree**. Do not package from `src/linux` after compiling
+`/workspace/linux-gtaxlwifi-display`.
+
+After rootfs generation compare:
+
+```bash
+sha256sum /workspace/linux-gtaxlwifi-display/.output/arch/arm64/boot/Image
+
+sudo sha256sum \
+  "$GTAXL_ROOT/work/pmbootstrap-work/chroot_rootfs_samsung-gtaxlwifi/boot/vmlinuz"
+```
+
+The hashes must be identical.
+
+A previous helper revision assumed `$GTAXL_ROOT/src/linux/.output` and produced
+a false "stale vmlinuz" warning while an alternate worktree was being used.
+Treat the hash comparison as authoritative.
 
 ## 7. Exynos QCDT boot-image rules
 
@@ -556,7 +610,198 @@ Treat CI output as an independent reproduction check. Do not flash a CI image
 before verifying its hashes, ZIP integrity, BOOT size, and the commits it was
 built from.
 
-## 15. Full offline snapshot
+## 15. Current display-debug baseline
+
+The current working graphical baseline is intentionally not the final display
+implementation.
+
+### 15.1 Regulator workaround
+
+The panel used to turn black at approximately the same time the regulator
+framework logged:
+
+```text
+vdd_ldo25: disabling
+vdd_ldo33: disabling
+vdd_ldo35: disabling
+```
+
+On `debug/display-regulator`, the SM-T580 DTS currently adds:
+
+```dts
+regulator-boot-on;
+regulator-always-on;
+```
+
+to `vdd_ldo25`, `vdd_ldo33` and `vdd_ldo35`.
+
+This keeps the inherited bootloader-initialized panel alive and is verified on
+real hardware.
+
+Before packaging a DT experiment, build only DTBs when possible:
+
+```bash
+cd /workspace/linux-gtaxlwifi-display
+
+make \
+  O=.output \
+  ARCH=arm64 \
+  CROSS_COMPILE=aarch64-linux-gnu- \
+  -j"$(nproc)" \
+  dtbs
+```
+
+Then inspect the **compiled DTB**, not only the source:
+
+```bash
+dtc -I dtb -O dts \
+  .output/arch/arm64/boot/dts/exynos/exynos7870-gtaxlwifi.dtb \
+  > /tmp/gtaxlwifi-final.dts
+
+grep -n -A12 -B3 -E \
+'regulator-name = "vdd_ldo25"|regulator-name = "vdd_ldo33"|regulator-name = "vdd_ldo35"' \
+  /tmp/gtaxlwifi-final.dts
+```
+
+After building the recovery image, repeat the check against the DTB installed
+in the rootfs:
+
+```bash
+sudo dtc -I dtb -O dts \
+  "$GTAXL_ROOT/work/pmbootstrap-work/chroot_rootfs_samsung-gtaxlwifi/boot/dtbs/exynos/exynos7870-gtaxlwifi.dtb" \
+  > /tmp/gtaxlwifi-rootfs.dts
+```
+
+Do not promote this broad always-on workaround as the final display power model.
+
+### 15.2 Samsung bootloader command-line caveat
+
+`device-samsung-gtaxlwifi/kernel-cmdline.conf` can be present correctly in the
+rootfs while its additions still do not appear in `/proc/cmdline` on this
+device.
+
+The current 6.19 arm64 tree exposes `CMDLINE_FROM_BOOTLOADER` and
+`CMDLINE_FORCE`; the historical append behavior used by earlier work was not
+available in this branch.
+
+The current development kernel therefore carries a small debug patch that
+appends `CONFIG_CMDLINE` to the Samsung-provided command line while preserving
+the bootloader arguments.
+
+Verified development arguments include:
+
+```text
+console=tty0
+consoleblank=0
+pmos.debug-shell
+plymouth.enable=0
+systemd.show_status=1
+```
+
+Validate the actual boot, not the source config:
+
+```sh
+cat /proc/cmdline
+```
+
+`pmos.debug-shell` is considered verified only when the initramfs visibly stops
+in the postmarketOS debug shell.
+
+Resume boot with:
+
+```sh
+pmos_continue_boot
+```
+
+Do not use `CONFIG_CMDLINE_FORCE` casually: the Samsung bootloader supplies many
+device-specific arguments that the current development baseline preserves.
+
+### 15.3 XFCE4 graphical test
+
+XFCE4 is verified to render on the inherited simpledrm framebuffer.
+
+To build a graphical test image:
+
+```bash
+cd "$GTAXL_ROOT"
+source scripts/lib/common.sh
+
+pmb config ui xfce4
+pmb status
+```
+
+Confirm that the generated rootfs installs `postmarketos-ui-xfce4`.
+
+The observed boot sequence may include a short console/login phase and roughly
+ten seconds of black screen before XFCE4 appears.
+
+This only verifies userspace rendering on the inherited framebuffer; it does
+not prove native DECON/DSIM/panel support.
+
+Plymouth has crashed in the current baseline. Keep it disabled/out of the
+critical path during display bring-up.
+
+### 15.4 Device-package version trap
+
+pmbootstrap may prefer an already-built local APK if its package revision is
+higher than the modified source package.
+
+If a build warns:
+
+```text
+A binary package for device-samsung-gtaxlwifi has a newer version ...
+```
+
+do not ignore it. Ensure the intended device package is the version that will
+be installed, or remove/rebuild the stale package according to normal
+pmbootstrap workflow.
+
+Before flashing, inspect the relevant files in the generated rootfs when a
+device-package change is part of the experiment.
+
+## 16. Debugging helpers
+
+Common helpers:
+
+```bash
+./scripts/ssh-device.sh
+./scripts/device-status.sh
+./scripts/collect-boot-debug.sh <label>
+./scripts/screen-refresh-test.sh
+./scripts/build-kernel.sh
+./scripts/build-recovery.sh <label>
+./scripts/flash-recovery.sh artifacts/<milestone>/<file>.zip
+```
+
+Prefer passing an explicit artifact path to `flash-recovery.sh` so there is no
+ambiguity about which ZIP is being sideloaded.
+
+For display experiments, verification should happen at every layer:
+
+```text
+DTS source
+  ↓
+compiled DTB
+  ↓
+rootfs DTB
+  ↓
+recovery ZIP
+  ↓
+real-device sysfs/dmesg result
+```
+
+For kernel experiments:
+
+```text
+.output/arch/arm64/boot/Image SHA256
+  ==
+rootfs /boot/vmlinuz SHA256
+```
+
+Only then flash.
+
+
+## 17. Full offline snapshot
 
 A *literal* snapshot containing every file under the project includes:
 
@@ -634,7 +879,7 @@ A smaller **source snapshot** can exclude `work/` because it is rebuildable,
 but that is not a literal "every file" snapshot and must not be confused with
 the full archive described above.
 
-## 16. Before publishing publicly
+## 18. Before publishing publicly
 
 Before changing the GitHub repositories from private to public:
 
