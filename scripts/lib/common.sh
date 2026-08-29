@@ -15,8 +15,6 @@ fi
 GTAXL_ROOT="${GTAXL_ROOT:-$DEFAULT_ROOT}"
 GTAXL_PMB="${GTAXL_PMB:-$GTAXL_ROOT/src/pmbootstrap/pmbootstrap.py}"
 GTAXL_PMB_CFG="${GTAXL_PMB_CFG:-$GTAXL_ROOT/config/pmbootstrap-console.cfg}"
-GTAXL_SSH_HOST="${GTAXL_SSH_HOST:-172.16.42.1}"
-GTAXL_SSH_USER="${GTAXL_SSH_USER:-user}"
 GTAXL_ADB_SUDO="${GTAXL_ADB_SUDO:-1}"
 GTAXL_CACHE_DEVICE="${GTAXL_CACHE_DEVICE:-/dev/mmcblk0p20}"
 
@@ -69,27 +67,64 @@ wait_for_adb_state() {
   done
 }
 
-ssh_base=(
-  ssh
+require_ssh_config() {
+  [[ -n "${GTAXL_SSH_USER:-}" ]] || die "GTAXL_SSH_USER is missing from $GTAXL_ROOT/.env"
+  [[ -n "${GTAXL_SSH_HOST:-}" ]] || die "GTAXL_SSH_HOST is missing from $GTAXL_ROOT/.env"
+
+  require_cmd ssh
+
+  # Password authentication is intentionally automated from the local-only
+  # .env. sshpass receives it through SSHPASS rather than a command-line arg.
+  if [[ -n "${GTAXL_SSH_PASSWORD:-}" ]]; then
+    require_cmd sshpass
+  fi
+}
+
+ssh_options=(
   -o UserKnownHostsFile=/dev/null
   -o StrictHostKeyChecking=no
   -o ConnectTimeout=5
-  "$GTAXL_SSH_USER@$GTAXL_SSH_HOST"
+  -o LogLevel=ERROR
 )
 
+ssh_run() {
+  require_ssh_config
+
+  if [[ -n "${GTAXL_SSH_PASSWORD:-}" ]]; then
+    SSHPASS="$GTAXL_SSH_PASSWORD" sshpass -e \
+      ssh "${ssh_options[@]}" "$GTAXL_SSH_USER@$GTAXL_SSH_HOST" "$@"
+  else
+    ssh "${ssh_options[@]}" "$GTAXL_SSH_USER@$GTAXL_SSH_HOST" "$@"
+  fi
+}
+
+ssh_device() {
+  require_ssh_config
+
+  if [[ -n "${GTAXL_SSH_PASSWORD:-}" ]]; then
+    SSHPASS="$GTAXL_SSH_PASSWORD" sshpass -e \
+      ssh -tt "${ssh_options[@]}" "$GTAXL_SSH_USER@$GTAXL_SSH_HOST" "$@"
+  else
+    ssh -tt "${ssh_options[@]}" "$GTAXL_SSH_USER@$GTAXL_SSH_HOST" "$@"
+  fi
+}
+
 ssh_reachable() {
+  [[ -n "${GTAXL_SSH_HOST:-}" ]] || return 1
   timeout 2 bash -c "</dev/tcp/$GTAXL_SSH_HOST/22" >/dev/null 2>&1
 }
 
 remote_cmd() {
-  "${ssh_base[@]}" "$@"
+  ssh_run "$@"
 }
 
 remote_sudo() {
+  require_ssh_config
+
   if [[ -n "${GTAXL_SSH_PASSWORD:-}" ]]; then
-    printf '%s\n' "$GTAXL_SSH_PASSWORD" | "${ssh_base[@]}" "sudo -S -p '' $*"
+    printf '%s\n' "$GTAXL_SSH_PASSWORD" | ssh_run "sudo -S -p '' $*"
   else
-    "${ssh_base[@]}" -tt "sudo $*"
+    ssh_device "sudo $*"
   fi
 }
 

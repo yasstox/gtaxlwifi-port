@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 source "$(dirname "$0")/lib/common.sh"
 require_not_root
-ssh_reachable || die "SSH is not reachable at $GTAXL_SSH_HOST"
+ssh_reachable || die "SSH is not reachable at ${GTAXL_SSH_HOST:-<unset>}"
 
 LABEL="${1:-$(date +%Y%m%d-%H%M%S)}"
 DEST="$GTAXL_ROOT/docs/debug/$LABEL"

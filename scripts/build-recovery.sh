@@ -4,7 +4,8 @@ source "$(dirname "$0")/lib/common.sh"
 require_not_root
 
 LABEL="${1:-manual-$(date +%Y%m%d-%H%M)}"
-PASSWORD="${GTAXL_SSH_PASSWORD:-postmarketos}"
+PASSWORD="${GTAXL_SSH_PASSWORD:-}"
+[[ -n "$PASSWORD" ]] || die "GTAXL_SSH_PASSWORD is missing from $GTAXL_ROOT/.env"
 
 log "Building device package"
 cd "$GTAXL_ROOT/src/pmaports"
