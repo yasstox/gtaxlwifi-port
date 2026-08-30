@@ -63,7 +63,7 @@ supply mali not found, using dummy regulator
 ## Current integration branches
 
 ```text
-clean kernel:   port/gtaxlwifi-6.19
+clean kernel:   exynos7870/6.19
 clean pmaports: port/gtaxlwifi-6.19
 display debug:  debug/display-regulator
 meta:           main
