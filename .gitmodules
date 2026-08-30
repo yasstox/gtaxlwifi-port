@@ -10,4 +10,4 @@
 	branch = exynos7870/6.19
 [submodule "src/vendor-kernel"]
 	path = src/vendor-kernel
-	url = https://github.com/yasstox/Kernel_SM-T580_gtaxlwifi-reference.git
+	url = https://github.com/yasstox/Kernel_SM-T580_gtaxlwifi.git
