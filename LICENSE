@@ -1,0 +1,12 @@
+SPDX-License-Identifier: GPL-3.0-only
+
+Copyright (C) 2026 Yassine MILED
+
+This repository's original files are licensed under the GNU General Public License version 3 only (GPL-3.0-only).
+
+You may copy, modify and redistribute this software under the terms of the GNU General Public License version 3. If you distribute a modified version or binaries derived from this software, you must make the corresponding source code available under the same GPL-3.0-only terms, as required by the license.
+
+The full license text is available from the GNU Project:
+https://www.gnu.org/licenses/gpl-3.0.txt
+
+This license applies only to original files in this meta-repository unless a file states otherwise. Git submodules, imported code, patches derived from upstream projects, and other third-party material retain their own licenses and copyright notices.
