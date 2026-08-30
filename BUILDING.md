@@ -17,7 +17,7 @@ gtaxlwifi-port/
 Main branches:
 
 ```text
-src/linux:    exynos7870/6.19
+src/linux:    port/gtaxlwifi-6.19
 src/pmaports: port/gtaxlwifi-6.19
 meta:         main
 ```
