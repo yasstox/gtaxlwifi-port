@@ -50,7 +50,7 @@ DECON -> Exynos7870 DSIM/MIPI-DSI -> BOE/Himax8279D panel
 
 ## Git / reproducibility
 
-- Keep clean kernel fixes on `exynos7870/6.19`.
+- Keep clean kernel fixes on `port/gtaxlwifi-6.19`.
 - Keep clean pmaports fixes on `port/gtaxlwifi-6.19`.
 - Keep temporary display hacks on `debug/display-regulator` until replaced.
 - Do not run concurrent pmbootstrap packaging/install jobs against the shared workdir.
