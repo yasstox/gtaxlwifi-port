@@ -44,7 +44,7 @@ The meta-repository records exact submodule revisions for reproducible checkpoin
 Main development branches:
 
 ```text
-src/linux:    port/gtaxlwifi-6.19
+src/linux:    exynos7870/6.19
 src/pmaports: port/gtaxlwifi-6.19
 meta:         main
 ```
@@ -70,10 +70,6 @@ The Git history is the development log. Documentation intentionally describes th
 - Earlier SM-T580 mainline work: `https://gitlab.com/randwardatake/mainline-samsung-gtaxlwifi`
 - Samsung vendor-kernel reference: `https://github.com/Yusuf6411/Kernel_SM-T580_gtaxlwifi`
 
-## AI-assisted development
-
-AI tools are used extensively for research, debugging, code review and learning while working on the real device. Hardware observations, builds and validation are performed on physical hardware; AI suggestions are treated as hypotheses to test, not as verified results by themselves.
-
 ## Licensing
 
-Files written for this meta-repository use the repository's stated license. Submodules and imported/derived upstream code retain their original licenses and attribution requirements.
+Files written for this meta-repository are licensed under GPL-3.0-only. Submodules and imported/derived upstream code retain their original licenses and attribution requirements.
