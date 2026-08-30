@@ -111,13 +111,13 @@ jobs:
 
           source "$RUNNER_TEMP/pmb-env.sh"
 
-
           # pmbootstrap init is interactive. Feed default answers, but disable
           # pipefail for this pipeline because `yes` normally receives SIGPIPE
           # when pmbootstrap finishes reading its input.
           set +o pipefail
           yes '' | pmb init --shallow-initial-clone
           set -o pipefail
+
           # After initialization, point pmbootstrap at the exact pmaports
           # commit recorded by the meta-repository.
           pmb config aports "$GITHUB_WORKSPACE/src/pmaports"
@@ -146,6 +146,16 @@ jobs:
             CROSS_COMPILE=aarch64-linux-gnu- \
             olddefconfig
 
+          for opt in \
+            CONFIG_I2C=y \
+            CONFIG_I2C_S3C2410=y \
+            CONFIG_MFD_SEC_I2C=y \
+            CONFIG_MFD_SEC_CORE=y \
+            CONFIG_REGMAP_I2C=y \
+            CONFIG_REGULATOR_S2MPS11=y; do
+            grep -qxF "$opt" .output/.config
+          done
+
           make \
             O=.output \
             ARCH=arm64 \
@@ -159,15 +169,27 @@ jobs:
       - name: Package local kernel
         shell: bash
         run: |
+          set -euxo pipefail
           source "$RUNNER_TEMP/pmb-env.sh"
           cd src/linux
           pmb build --force --envkernel linux-postmarketos-exynos7870
+
+          APK="$(find "$PMB_WORK/packages/edge/aarch64" -maxdepth 1 -type f \
+            -name 'linux-postmarketos-exynos7870*.apk' -printf '%T@ %p\n' \
+            | sort -n | tail -1 | cut -d' ' -f2-)"
+          test -f "$APK"
+
+          IMAGE_SHA="$(sha256sum .output/arch/arm64/boot/Image | awk '{print $1}')"
+          APK_SHA="$(tar -xOf "$APK" boot/vmlinuz 2>/dev/null | sha256sum | awk '{print $1}')"
+          echo "fresh Image: $IMAGE_SHA"
+          echo "kernel APK:  $APK_SHA"
+          test "$IMAGE_SHA" = "$APK_SHA"
 
       - name: Build device package
         shell: bash
         run: |
           source "$RUNNER_TEMP/pmb-env.sh"
-          pmb build --force device-samsung-gtaxlwifi
+          pmb build --arch aarch64 --force device-samsung-gtaxlwifi
 
       - name: Build recovery ZIP
         shell: bash
@@ -200,13 +222,29 @@ jobs:
           BOOT="$ROOTFS/boot/boot.img"
           DTB="$ROOTFS/boot/dtbs/exynos/exynos7870-gtaxlwifi.dtb"
           VMLINUX="$ROOTFS/boot/vmlinuz"
+          IMAGE="$GITHUB_WORKSPACE/src/linux/.output/arch/arm64/boot/Image"
 
           sudo test -f "$ZIP"
           sudo test -f "$BOOT"
           sudo test -f "$DTB"
           sudo test -f "$VMLINUX"
+          test -f "$IMAGE"
 
           sudo unzip -t "$ZIP"
+
+          IMAGE_SHA="$(sha256sum "$IMAGE" | awk '{print $1}')"
+          ROOTFS_SHA="$(sudo sha256sum "$VMLINUX" | awk '{print $1}')"
+          echo "fresh Image:   $IMAGE_SHA"
+          echo "rootfs kernel: $ROOTFS_SHA"
+          test "$IMAGE_SHA" = "$ROOTFS_SHA"
+
+          for opt in \
+            CONFIG_MFD_SEC_I2C=y \
+            CONFIG_MFD_SEC_CORE=y \
+            CONFIG_REGMAP_I2C=y \
+            CONFIG_REGULATOR_S2MPS11=y; do
+            sudo grep -qxF "$opt" "$ROOTFS/boot/config"
+          done
 
           BOOT_BYTES="$(sudo stat -Lc '%s' "$BOOT")"
           echo "boot.img size: $BOOT_BYTES bytes"
@@ -229,6 +267,8 @@ jobs:
             echo "kernel_commit=$(git -C src/linux rev-parse HEAD)"
             echo "pmaports_commit=$(git -C src/pmaports rev-parse HEAD)"
             echo "kernel_release=$(cat src/linux/.output/include/config/kernel.release)"
+            echo "image_sha256=$IMAGE_SHA"
+            echo "rootfs_kernel_sha256=$ROOTFS_SHA"
             echo "boot_bytes=$BOOT_BYTES"
           } > "$DIST/BUILD-METADATA.txt"
 
