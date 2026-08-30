@@ -7,7 +7,7 @@
 [submodule "src/linux"]
 	path = src/linux
 	url = https://github.com/yasstox/linux-exynos7870-gtaxlwifi.git
-	branch = exynos7870/6.19
+	branch = port/gtaxlwifi-6.19
 [submodule "src/vendor-kernel"]
 	path = src/vendor-kernel
 	url = https://github.com/yasstox/Kernel_SM-T580_gtaxlwifi.git
