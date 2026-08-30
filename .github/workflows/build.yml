@@ -36,6 +36,12 @@ jobs:
               https://gitlab.postmarketos.org/postmarketOS/pmaports.git
           fi
 
+          git -C src/pmaports fetch --no-tags upstream \
+            +refs/heads/main:refs/remotes/upstream/main
+
+          git -C src/pmaports rev-parse --verify refs/remotes/upstream/main
+          git -C src/pmaports show refs/remotes/upstream/main:channels.cfg >/dev/null
+
           echo "pmaports remotes:"
           git -C src/pmaports remote -v
 
