@@ -52,7 +52,7 @@ Current display integration worktree:
 debug/display-regulator
 ```
 
-The clean kernel remains in `src/linux` on `port/gtaxlwifi-6.19`.
+The clean kernel remains in `src/linux` on `exynos7870/6.19`.
 
 The worktrees share pmbootstrap's package/rootfs workdir. Do not run concurrent packaging or `pmb install` jobs from multiple worktrees.
 
