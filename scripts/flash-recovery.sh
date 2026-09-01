@@ -15,49 +15,37 @@ sha256sum "$ZIP"
 
 if ssh_reachable; then
   log "Device appears to be booted in Linux"
-  if confirm "Reboot $GTAXL_SSH_HOST into recovery now?"; then
-    remote_sudo reboot recovery || warn "SSH reboot failed; enter TWRP manually."
-  fi
+  log "Automatically rebooting $GTAXL_SSH_HOST into recovery"
+  remote_sudo reboot recovery || warn "SSH reboot failed; enter TWRP manually."
 fi
 
 log "Waiting for TWRP/ADB"
-for _ in $(seq 1 90); do
-  if adb_cmd devices 2>/dev/null | awk 'NR>1 && $2=="recovery" {found=1} END{exit !found}'; then
-    break
-  fi
-  sleep 2
-done
+adb_cmd wait-for-recovery
 
 adb_cmd devices -l
 
-if adb_cmd devices 2>/dev/null | awk 'NR>1 && $2=="recovery" {found=1} END{exit !found}'; then
-  log "Starting TWRP sideload"
-  if ! adb_cmd shell twrp sideload; then
-    warn "Could not start sideload automatically. Start ADB Sideload physically in TWRP."
-  fi
-fi
+log "Starting TWRP sideload"
+# TWRP stops adbd while switching to sideload, so the shell transport normally
+# closes before this command can return a successful status.
+adb_cmd shell twrp sideload || true
 
 log "Waiting for ADB sideload state"
-if ! wait_for_adb_state sideload 120; then
-  warn "ADB did not report sideload automatically. Current state: $(adb_state)"
-  echo "Start TWRP -> Advanced -> ADB Sideload, then press Enter."
-  read -r
-  wait_for_adb_state sideload 60 || die "Still not in sideload mode."
-fi
+adb_cmd wait-for-sideload
 
 log "Sideloading $(basename "$ZIP")"
 adb_cmd sideload "$ZIP"
 
 log "Waiting for recovery to return"
-wait_for_adb_state recovery 30 || true
+adb_cmd wait-for-recovery
 
 if [[ "$(adb_state)" == "recovery" ]]; then
   log "TWRP result"
   adb_cmd shell "tail -200 /tmp/recovery.log | grep -E 'Installation done|Updater process ended|RC=|[Ee]rror'" || true
 fi
 
-if confirm "Reboot into postmarketOS now?"; then
+if [[ "$(adb_state)" == "recovery" ]]; then
+  log "Automatically rebooting into postmarketOS"
   adb_cmd reboot
 else
-  echo "Leaving device in TWRP."
+  warn "Recovery did not return after sideload; not forcing reboot."
 fi
