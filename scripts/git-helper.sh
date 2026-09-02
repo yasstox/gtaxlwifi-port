@@ -28,7 +28,7 @@ if [[ "$REPO" == "$GTAXL_ROOT" ]]; then
   PMB_BRANCH="$(git -C "$GTAXL_ROOT/src/pmaports" branch --show-current 2>/dev/null || true)"
   if [[ "$PMB_BRANCH" == debug/* ]]; then
     warn "pmaports is currently on debug branch $PMB_BRANCH. Refusing an automatic meta commit so a debug gitlink is not published accidentally."
-    echo "Promote/return pmaports to port/gtaxlwifi-6.19 first."
+    echo "Promote/return pmaports to port/gtaxlwifi-7.1 first."
     exit 1
   fi
 fi

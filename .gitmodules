@@ -4,10 +4,11 @@
 [submodule "src/pmaports"]
 	path = src/pmaports
 	url = https://github.com/yasstox/pmaports-gtaxlwifi.git
+	branch = port/gtaxlwifi-7.1
 [submodule "src/linux"]
 	path = src/linux
 	url = https://github.com/yasstox/linux-exynos7870-gtaxlwifi.git
-	branch = port/gtaxlwifi-6.19
+	branch = port/gtaxlwifi-7.1
 [submodule "src/vendor-kernel"]
 	path = src/vendor-kernel
 	url = https://github.com/yasstox/Kernel_SM-T580_gtaxlwifi.git

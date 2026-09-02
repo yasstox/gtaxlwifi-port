@@ -2,29 +2,27 @@
 
 Main development repository for the `samsung-gtaxlwifi` postmarketOS port on the Samsung Exynos 7870 platform.
 
-The goal is a maintainable Linux 6.19-based port with as much hardware support as possible.
+The goal is a maintainable Linux 7.1-based port with as much hardware support as possible.
 
 ## Current status
 
 | Component | Status | Notes |
 | --- | --- | --- |
-| Linux 6.19 boot | PASS | Full boot into postmarketOS/systemd |
+| Linux 7.1 boot | PASS | Full boot into postmarketOS/systemd |
 | Internal eMMC / rootfs | PASS | `pmOS_boot` and `pmOS_root` work from Android `SYSTEM` |
 | USB gadget + SSH | PASS | Main development connection |
 | Wi-Fi | PASS | QCA9377, SDIO High-Speed 50 MHz, 2.4/5 GHz, IPv4/IPv6 |
-| Display | PARTIAL | Bootloader framebuffer via `simpledrm`; XFCE4 works |
-| GPU | PARTIAL | Mali-T830 + Panfrost + Mesa/glamor acceleration; power rail not modelled |
+| Display | PASS | Native SM-T580 DECON -> DSIM/MIPI-DSI -> HX8279D pipeline |
+| GPU | PARTIAL | Mali-T830 + Panfrost + Mesa/glamor acceleration; performance tuning remains |
 | GPIO keys | PASS | Input events available |
-| Touchscreen | FAIL | Current RMI4 I2C communication fails |
-| Native display | TODO | DECON -> DSIM/MIPI-DSI -> panel not yet brought up |
+| Touchscreen | PASS | Legacy Samsung STMFTS support |
 | Bluetooth | TODO | Not brought up yet |
 
-The current graphical development baseline still depends on the Samsung bootloader having initialized the display and on a temporary display-regulator workaround. It is not native display support.
+The current graphical baseline uses the native SM-T580 display pipeline and HX8279D backlight control.
 
 See:
 
 - `STATUS.md` for the current verified state;
-- `TODO.md` for remaining work;
 - `BUILDING.md` for the current build/flash workflow;
 - `WIFI.md` for the final Wi-Fi implementation summary.
 
@@ -44,17 +42,12 @@ The meta-repository records exact submodule revisions for reproducible checkpoin
 Main development branches:
 
 ```text
-src/linux:    port/gtaxlwifi-6.19
-src/pmaports: port/gtaxlwifi-6.19
+src/linux:    port/gtaxlwifi-7.1
+src/pmaports: port/gtaxlwifi-7.1
 meta:         main
 ```
 
-Current display integration worktree:
-
-```text
-/workspace/linux-gtaxlwifi-display
-debug/display-regulator
-```
+The recorded kernel checkpoint is `f6fc5b0eb294678c56ee33b0df142eeb8a046065`.
 
 ## Development model
 

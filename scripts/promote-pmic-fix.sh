@@ -6,7 +6,7 @@ require_not_root
 PMAPORTS="$GTAXL_ROOT/src/pmaports"
 META="$GTAXL_ROOT"
 SUBJECT='linux-postmarketos-exynos7870: enable Samsung PMIC support'
-CLEAN_BRANCH='port/gtaxlwifi-6.19'
+CLEAN_BRANCH='port/gtaxlwifi-7.1'
 
 FIX="$(git -C "$PMAPORTS" log --all --format='%H' --grep="^${SUBJECT}$" -n1)"
 [[ -n "$FIX" ]] || die "Could not find PMIC fix commit by subject"
