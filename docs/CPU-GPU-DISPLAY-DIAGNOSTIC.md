@@ -252,3 +252,22 @@ from 53% to 54%, voltage reached 3.882 V, and temperature fell to 37.8 degrees
 C. This validates sustained charging from a clean Linux boot. The remaining
 inability to gain charge while the desktop is active is a system
 power-consumption problem, not a charger-enable failure.
+
+Revision `#23` connects the charger driver to the SM5703 MUIC extcon and
+selects the Samsung-style current profile dynamically: 450 mA for an SDP/USB
+host and 1.65 A only when the MUIC reports a dedicated charging port (DCP).
+The kernel and DTB compile cleanly, the recovery ZIP checksum matched the
+kernel installed in the rootfs, TWRP completed with return code zero, and the
+tablet booted kernel `#23` normally. On the development PC the MUIC correctly
+reported `USB=1`, `SDP=1`, `DCP=0`, and the charger exposed a 450 mA input
+limit. This validates the conservative SDP branch on real hardware; the DCP
+branch still requires a wall-charger test.
+
+At full brightness with XFCE active, the battery measured about -406 mA even
+though the charger reported charging. Reducing brightness alone did not make
+the net current positive during this run. With the display manager stopped,
+the backlight state changed to `brightness=0`, `bl_power=0`, and battery current
+became +277 mA at 3.871 V. This reconfirms real charging and shows that a 450 mA
+computer USB source cannot cover the tablet's full active-display load. It does
+not yet prove positive charging during normal XFCE use; that acceptance test
+must be repeated on a correctly detected DCP source.
