@@ -100,19 +100,29 @@ fi
 echo
 echo '=== 2. KERNEL CONFIG ==='
 
-mkdir -p "$OUT"
+# An earlier in-tree Kconfig/build invocation prevents Kbuild from using O=.
+# mrproper only removes generated files from the source tree; the separate
+# .output directory (including its .config and compiled objects) is preserved.
+if [[ -f "$KERNEL/.config" ||
+      -d "$KERNEL/include/config" ||
+      -d "$KERNEL/arch/arm64/include/generated" ]]; then
+    echo 'Generated files found in the kernel source tree.'
+    echo 'Cleaning the source tree before the out-of-tree build.'
 
-if [[ ! -s "$OUT/.config" ]]; then
-    [[ -s "$CONFIG_SRC" ]] || die "Missing kernel config: $CONFIG_SRC"
-
-    echo 'No .output/.config exists.'
-    echo 'Importing pmaports config once.'
-
-    cp "$CONFIG_SRC" "$OUT/.config"
-else
-    echo 'Existing .output/.config found.'
-    echo 'Preserving it.'
+    make \
+        -C "$KERNEL" \
+        ARCH=arm64 \
+        mrproper
 fi
+
+mkdir -p "$OUT"
+[[ -s "$CONFIG_SRC" ]] || die "Missing kernel config: $CONFIG_SRC"
+
+# The packaged configuration is the reproducible source of truth. Keeping an
+# older output config silently omitted newly enabled modules (CM3323 in
+# particular) from the recovery ZIP.
+echo 'Importing versioned pmaports config.'
+cp "$CONFIG_SRC" "$OUT/.config"
 
 # Non-interactive.
 make \
