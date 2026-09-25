@@ -24,8 +24,16 @@ verified 100% functional for rendering, scanout, devfreq, memory and thermal
 behavior. No such fully validated peer was found; do not transfer a DT setup
 just because another device has the same GPU ID.
 
-Static code review confirms the allocation boundary: `exynos_drm_gem_dumb_create()` requests `EXYNOS_BO_CONTIG` without an IOMMU, `exynos_drm_alloc_buf()` translates that to `DMA_ATTR_FORCE_CONTIGUOUS` and `dma_alloc_attrs()`, and the PRIME import path rejects a buffer that lacks a contiguous DMA range. Panfrost rendering alone cannot remove that DECON requirement. This confirms *why* CMA pressure is plausible; it does not establish that the currently installed 128 MiB build still runs out. Mesa's own Panfrost documentation describes the render/display split through `kmsro` (https://docs.mesa3d.org/drivers/panfrost.html).\n\nNo current post-128-MiB idle/load capture is in this repository. Nothing needs to be done while the physical tablet is unavailable. Once it is accessible, run these
-read-only captures against the *currently booted* build, using existing `.env`
+Static code review confirms the allocation boundary. Without an IOMMU,
+`exynos_drm_gem_dumb_create()` requests `EXYNOS_BO_CONTIG` and
+`exynos_drm_alloc_buf()` translates it to `DMA_ATTR_FORCE_CONTIGUOUS`.
+The PRIME import path also rejects a buffer without a contiguous DMA range.
+Panfrost rendering alone cannot remove that DECON requirement. This explains
+why CMA pressure is plausible; it does not establish that the installed
+128 MiB build still runs out. Mesa describes the render/display split through
+`kmsro`: https://docs.mesa3d.org/drivers/panfrost.html.
+
+No current post-128-MiB idle/load capture is in this repository. Nothing needs to be done while the physical tablet is unavailable. Once it is accessible, run these read-only captures against the *currently booted* build, using existing `.env`
 SSH settings. Start the load capture while dragging windows, and keep dragging
 throughout its 24-second default duration:
 
