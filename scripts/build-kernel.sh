@@ -2,12 +2,16 @@
 set -Eeuo pipefail
 source "$(dirname "$0")/lib/common.sh"
 require_not_root
+require_cmd git
 require_cmd make
 require_cmd sha256sum
 
-KERNEL="$GTAXL_ROOT/src/linux"
+KERNEL="$GTAXL_KERNEL_DIR"
 CONFIG_SRC="$GTAXL_ROOT/src/pmaports/device/testing/linux-postmarketos-exynos7870/config-postmarketos-exynos7870.aarch64"
 OUT="$KERNEL/.output"
+[[ -f "$KERNEL/Makefile" ]] || die "Kernel worktree not found: $KERNEL"
+[[ -f "$CONFIG_SRC" ]] || die "Kernel configuration not found: $CONFIG_SRC"
+log "Building kernel worktree: $KERNEL ($(git -C "$KERNEL" branch --show-current))"
 
 [[ "${1:-}" != "--incremental" ]] && { log "Cleaning kernel output"; rm -rf "$OUT"; }
 mkdir -p "$OUT"
