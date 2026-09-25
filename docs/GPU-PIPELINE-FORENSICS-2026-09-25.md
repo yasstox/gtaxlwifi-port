@@ -131,7 +131,7 @@ and a repeated comparable workload on the actual tablet. A successful compile
 cannot prove GPU correctness, latency, power draw or a 100% fix.
 
 Sources: project `STATUS.md`, `docs/CPU-GPU-DISPLAY-DIAGNOSTIC.md`, source
-paths named above; [Mesa KMSRO integration](https://docs.mesa3d.org/drivers/kmsro.html),
+paths named above; [Mesa Panfrost and KMSRO integration](https://docs.mesa3d.org/drivers/panfrost.html),
 [Linux Exynos GEM](https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/exynos/exynos_drm_gem.c),
 [Linux reserved-memory binding](https://github.com/torvalds/linux/blob/master/Documentation/devicetree/bindings/reserved-memory/reserved-memory.yaml),
 and the linked postmarketOS device pages. Source trees and external pages can
