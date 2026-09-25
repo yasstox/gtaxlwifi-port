@@ -88,10 +88,18 @@ discover_kernel_worktree() {
 }
 
 
-log "Discovering kernel Git worktree"
-
-KERNEL_DIR="$(discover_kernel_worktree)" ||
-    die "No fully-built kernel Git worktree found"
+if [[ "$GTAXL_KERNEL_DIR" != "$GTAXL_ROOT/src/linux" ]]; then
+    log "Using explicitly configured kernel worktree: $GTAXL_KERNEL_DIR"
+    KERNEL_DIR="$GTAXL_KERNEL_DIR"
+    [[ -s "$KERNEL_DIR/.output/arch/arm64/boot/Image" &&
+       -s "$KERNEL_DIR/.output/arch/arm64/boot/dts/exynos/exynos7870-gtaxlwifi.dtb" &&
+       -s "$KERNEL_DIR/.output/modules.order" ]] ||
+        die "Explicit kernel worktree does not have a complete build: $KERNEL_DIR"
+else
+    log "Discovering kernel Git worktree"
+    KERNEL_DIR="$(discover_kernel_worktree)" ||
+        die "No fully-built kernel Git worktree found"
+fi
 
 KERNEL_DIR="$(readlink -f "$KERNEL_DIR")"
 KERNEL_OUT="$KERNEL_DIR/.output"
