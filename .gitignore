@@ -18,3 +18,5 @@ share/
 /src/linux/.output/
 /work/
 work/
+
+/docs/debug/
