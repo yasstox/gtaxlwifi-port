@@ -24,16 +24,8 @@ verified 100% functional for rendering, scanout, devfreq, memory and thermal
 behavior. No such fully validated peer was found; do not transfer a DT setup
 just because another device has the same GPU ID.
 
-Static code review confirms the allocation boundary. Without an IOMMU,
-`exynos_drm_gem_dumb_create()` requests `EXYNOS_BO_CONTIG` and
-`exynos_drm_alloc_buf()` translates it to `DMA_ATTR_FORCE_CONTIGUOUS`.
-The PRIME import path also rejects a buffer without a contiguous DMA range.
-Panfrost rendering alone cannot remove that DECON requirement. This explains
-why CMA pressure is plausible; it does not establish that the installed
-128 MiB build still runs out. Mesa describes the render/display split through
-`kmsro`: https://docs.mesa3d.org/drivers/panfrost.html.
-
-No current post-128-MiB idle/load capture is in this repository. Nothing needs to be done while the physical tablet is unavailable. Once it is accessible, run these read-only captures against the *currently booted* build, using existing `.env`
+No current post-128-MiB idle/load capture is in this repository. Run these
+read-only captures against the *currently booted* build, using existing `.env`
 SSH settings. Start the load capture while dragging windows, and keep dragging
 throughout its 24-second default duration:
 
@@ -44,7 +36,10 @@ bash scripts/collect-gpu-pipeline.sh load
 
 The output under ignored `docs/debug/` includes actual boot arguments,
 DRM device mapping, render nodes, Panfrost devfreq values, `CmaFree`, memory
-and reclaim counters, process CPU/RSS, and kernel graphics messages. Compare
+and reclaim counters, memory pressure, runtime GPU status, process CPU/RSS,
+and kernel graphics messages. After both captures, run
+`python3 scripts/analyze-gpu-pipeline.py PATH-TO-IDLE PATH-TO-LOAD` to compare
+the recorded ranges and counter changes. Compare
 the two sample sets and especially *changes* in `pgscan_kswapd`/`allocstall`.
 Read `kernel-graphics.txt` for allocation failures and Panfrost faults.
 
@@ -74,6 +69,9 @@ G3D mux/divider and reports the achieved rate to devfreq. It is an isolated
 experiment; the port's own diagnostic recorded normal transitions without it.
 Do not merge that patch until a fresh capture shows a clock transition defect.
 
-This branch changes collection/documentation only; it has no flashed or
-benchmarked kernel. A hardware fix must be validated by fresh boot and paired
-captures before promoting it to the port branch.
+The companion kernel branch fixes a `QUERY_BO_INFO` BO-flag check, a reviewed
+correctness change with no proven connection to the reported slowdown. No
+experimental kernel was flashed or benchmarked. See
+`GPU-PIPELINE-FORENSICS-2026-09-25.md` for the complete analysis and
+evidence-based next steps. A hardware fix must be validated by fresh boot and
+paired captures before promoting it to the port branch.
