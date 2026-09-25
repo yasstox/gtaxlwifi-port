@@ -40,6 +40,13 @@ and reclaim counters, process CPU/RSS, and kernel graphics messages. Compare
 the two sample sets and especially *changes* in `pgscan_kswapd`/`allocstall`.
 Read `kernel-graphics.txt` for allocation failures and Panfrost faults.
 
+For an experimental kernel worktree, set `GTAXL_KERNEL_DIR` in the local `.env`
+to its absolute path. `build-kernel.sh` now builds that worktree, and
+`build-recovery.sh` uses the same explicitly selected complete build. With the
+default `src/linux` value, recovery retains its old worktree discovery. The
+existing Image/DTB checksum checks remain in place. These scripts only build
+packages/ZIPs; flashing remains a separate operation.
+
 Interpretation:
 
 1. If the booted kernel still exposes 32 MiB CMA, verify the **installed**
