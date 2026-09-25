@@ -43,6 +43,15 @@ while [ "$i" -le "$samples" ]; do
   printf '\n=== sample %s %s ===\n' "$i" "$(date -Is)"
   sed -n '/^MemTotal:/p;/^MemAvailable:/p;/^Shmem:/p;/^Unevictable:/p;/^CmaTotal:/p;/^CmaFree:/p' /proc/meminfo
   sed -n '/^pgscan_kswapd/p;/^pgsteal_kswapd/p;/^allocstall/p;/^compact_stall /p' /proc/vmstat
+  if [ -r /proc/pressure/memory ]; then
+    sed 's/^/memory pressure: /' /proc/pressure/memory
+  fi
+  for d in /sys/bus/platform/devices/*11400000*; do
+    [ -e "$d" ] || continue
+    for p in power/runtime_status power/runtime_active_time power/runtime_suspended_time; do
+      [ -r "$d/$p" ] && { printf '%s %s=' "$d" "$p"; cat "$d/$p"; }
+    done
+  done
   for d in /sys/class/devfreq/*; do
     [ -e "$d" ] || continue
     case "$(readlink -f "$d")" in
