@@ -11,6 +11,19 @@ configuration already has `CONFIG_CMA_SIZE_MBYTES=128`, while
 `CONFIG_EXYNOS_IOMMU` remains disabled: enabling the latter previously broke
 display startup. `STATUS.md` remains the authoritative hardware status.
 
+## Same-SoC comparisons
+
+The kernel's `exynos7870-j7xelte.dts` (Galaxy J7 2016) and
+`exynos7870-a2corelte.dts` (Galaxy A2 Core) both enable the shared
+`exynos7870.dtsi` Mali-T830 node. Neither board file provides a GPU OPP
+table or `mali-supply`, unlike `exynos7870-gtaxlwifi.dts` with its
+`vdd_buck3` supply and seven OPPs. DECON bring-up was reported tested on
+Galaxy J7 Prime and A2 Core in the upstream Exynos DRM patch discussion.
+These facts establish useful *topology* comparisons, not that any peer is
+verified 100% functional for rendering, scanout, devfreq, memory and thermal
+behavior. No such fully validated peer was found; do not transfer a DT setup
+just because another device has the same GPU ID.
+
 No current post-128-MiB idle/load capture is in this repository. Run these
 read-only captures against the *currently booted* build, using existing `.env`
 SSH settings. Start the load capture while dragging windows, and keep dragging
